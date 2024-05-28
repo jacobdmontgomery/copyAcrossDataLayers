@@ -15,5 +15,5 @@
 homepage: "https://www.jacob-montgomery.com"
 documentation: "https://github.com/jacobdmontgomery/copyAcrossDataLayers"
 versions:
-  - sha: f3e44c05e19584467287d066ab74dcc91a489adb
+  - sha: 0ab2a96a7141d2d62fd80dfe2ea3ca210de8a64c
     changeNotes: Initial Release
