@@ -19,7 +19,7 @@ ___INFO___
     "displayName": ""
   },
   "description": "This template can be used to copy one or more events across dataLayers, with a key added to show that the event is a copy. Fill in the data layer names and add the names of events to copy.",
-  "categories": ["UTILITY"]
+  "categories": ["UTILITY"],
   "containerContexts": [
     "WEB"
   ]
