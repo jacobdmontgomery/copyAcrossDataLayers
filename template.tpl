@@ -1,32 +1,25 @@
-// Copyright 2019 Google LLC
+___TERMS_OF_SERVICE___
 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+By creating or modifying this file you agree to Google Tag Manager's Community
+Template Gallery Developer Terms of Service available at
+https://developers.google.com/tag-manager/gallery-tos (or such other URL as
+Google may provide), as modified from time to time.
 
-//     https://www.apache.org/licenses/LICENSE-2.0
-
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 ___INFO___
 
 {
-  "displayName": "Example Template",
-  "description": "This is an example template. For more information, visit https://developers.google.com/tag-manager/templates",
-  "categories": ["AFFILIATE_MARKETING", "ADVERTISING"],
-  "securityGroups": [],
-  "id": "cvt_temp_public_id",
   "type": "TAG",
+  "id": "cvt_temp_public_id",
   "version": 1,
+  "securityGroups": [],
+  "displayName": "Copy Across DataLayers",
   "brand": {
-    "thumbnail": "",
-    "displayName": "",
-    "id": "brand_dummy"
+    "id": "brand_dummy",
+    "displayName": ""
   },
+  "description": "This template can be used to copy one or more events across dataLayers, with a key added to show that the event is a copy. Fill in the data layer names and add the names of events to copy.",
+  "categories": ["UTILITY"]
   "containerContexts": [
     "WEB"
   ]
@@ -37,13 +30,128 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "help": "Enter an example measurement ID. The value can be any character. This is only an example.",
-    "displayName": "Example Measurement ID",
-    "defaultValue": "foobarbaz1234",
-    "name": "MeasurementID",
-    "type": "TEXT"
+    "type": "TEXT",
+    "name": "oldDataLayer",
+    "displayName": "Name of data layer to copy from",
+    "simpleValueType": true,
+    "help": "Enter the name of the dataLayer that you want to copy from e.g. dataLayer"
+  },
+  {
+    "type": "TEXT",
+    "name": "newDataLayer",
+    "displayName": "Name of data layer to write to",
+    "simpleValueType": true,
+    "help": "Enter the name of the dataLayer that you want to copy to e.g. gtmDataLayer. The template will create this if it doesn\u0027t exist."
+  },
+  {
+    "type": "SIMPLE_TABLE",
+    "name": "eventTable",
+    "displayName": "Events Table",
+    "simpleTableColumns": [
+      {
+        "defaultValue": "",
+        "displayName": "List of events",
+        "name": "listOfEvents",
+        "type": "TEXT"
+      }
+    ],
+    "help": "Enter as many events to copy across as you want one per row, e.g. pageView, addToCart, checkoutCompleted"
   }
 ]
+
+
+___SANDBOXED_JS_FOR_WEB_TEMPLATE___
+
+// Required API methods
+const logToConsole = require('logToConsole');
+const copyFromWindow = require('copyFromWindow');
+const createQueue = require('createQueue');
+const copyFromDataLayer = require('copyFromDataLayer');
+const Object = require('Object');
+
+// Constants
+const oldDataLayer = data.oldDataLayer;
+const newDataLayer = data.newDataLayer;
+const eventsToDuplicate = data.eventTable.map(event => event.listOfEvents);
+
+// Initialize the newDataLayer queue
+const newDataLayerPush = createQueue(newDataLayer);
+
+// Function to copy an object
+function copyObject(obj) {
+  let copy = {};
+  for (let key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      copy[key] = obj[key];
+    }
+  }
+  return copy;
+}
+
+// Function to transform and copy data to newDataLayer
+function copyDataLayerEvent(eventData) {
+  let duplicateEvent = copyObject(eventData);
+  duplicateEvent.event_copy = true;
+  newDataLayerPush(duplicateEvent);
+  logToConsole("Event copied to newDataLayer:", duplicateEvent);
+}
+
+// Function to check if an event is in the list of events to duplicate
+function isEventToDuplicate(event) {
+  for (let i = 0; i < eventsToDuplicate.length; i++) {
+    if (eventsToDuplicate[i] === event) {
+      return true;
+    }
+  }
+  return false;
+}
+
+logToConsole("Script start");
+
+// Function to intercept dataLayer pushes
+function dataLayerInterceptor(event) {
+  if (event && typeof event === 'object' && !event.event_copy && isEventToDuplicate(event.event)) {
+    logToConsole("Intercepted event to duplicate:", event);
+    copyDataLayerEvent(event);
+  }
+  originalDataLayer.push(event);
+  return true;
+}
+
+// Retrieve the original dataLayer array from the window
+const originalDataLayer = copyFromWindow(oldDataLayer) || [];
+logToConsole("Original dataLayer:", originalDataLayer);
+
+// Override the dataLayer.push method with the interceptor
+function overrideDataLayerPush() {
+  const originalPush = originalDataLayer.push;
+  originalDataLayer.push = function(event) {
+    dataLayerInterceptor(event);
+  };
+}
+
+// Call override function
+overrideDataLayerPush();
+
+// Function to duplicate events
+(function duplicatePreExistingEvents() {
+  for (let i = 0; i < originalDataLayer.length; i++) {
+    const event = originalDataLayer[i];
+    if (event.event && !event.event_copy && isEventToDuplicate(event.event)) {
+      logToConsole("Duplicating pre-existing event:", event);
+      copyDataLayerEvent(event);
+    }
+  }
+})();
+
+// Call data.gtmOnFailure when the tag fails.
+const onFailure = () => {
+  logToConsole('dataLayer Copier failed');
+  data.gtmOnFailure();
+};
+
+// Call data.gtmOnSuccess when the tag is finished.
+data.gtmOnSuccess();
 
 
 ___WEB_PERMISSIONS___
@@ -65,17 +173,198 @@ ___WEB_PERMISSIONS___
         }
       ]
     },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
     "isRequired": true
   },
   {
     "instance": {
       "key": {
-        "publicId": "get_referrer",
+        "publicId": "access_globals",
         "versionId": "1"
       },
       "param": [
         {
-          "key": "urlParts",
+          "key": "keys",
+          "value": {
+            "type": 2,
+            "listItem": [
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "newDataLayer"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "dataLayer"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "oldDataLayer"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "brandNewDataLayer"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "read_data_layer",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "allowedKeys",
           "value": {
             "type": 1,
             "string": "any"
@@ -83,28 +372,22 @@ ___WEB_PERMISSIONS___
         }
       ]
     },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
     "isRequired": true
   }
 ]
 
 
-___SANDBOXED_JS_FOR_WEB_TEMPLATE___
+___TESTS___
 
-// Enter your template code here.
-const queryPermission = require('queryPermission');
-const getReferrerUrl = require('getReferrerUrl');
-let referrer;
-if (queryPermission('get_referrer', 'query')) {
-  referrer = getReferrerUrl('queryParams');
-}
-
-var log = require('logToConsole');
-log('data =', data);
-
-// Call data.gtmOnSuccess when the tag is finished.
-data.gtmOnSuccess();
+scenarios: []
+setup: ''
 
 
 ___NOTES___
 
-Created on 9/2/2019, 1:02:37 PM
+Created on 28/05/2024, 17:21:56
+
+
