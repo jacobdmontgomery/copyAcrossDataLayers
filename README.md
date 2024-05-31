@@ -15,11 +15,12 @@ To use the template:
 3. Click the top right menu and select Import
 4. Import the template.tpl file
 5. Adjust the permissions tags with the names of your data layer objects for it to access (currently instantiated with some dummy values)
-6. Create a new tag with this template
-7. Fill in the fields:
+6. Save and exit the template editor.
+7. Create a new tag in Tags and select this template
+8. Fill in the fields:
    - Name of data layer you want to copy from
    - Name of data layer you want to copy to
    - List of events top copy (*one event name as it appears in the data layer per row*)
-8. Add a trigger, such as Consent Initialisation or Page View, whatever makes the most sense for your use.
+9. Add a trigger, such as Consent Initialisation or Page View, whatever makes the most sense for your use.
 
 Let me know if you encounter any bugs!
