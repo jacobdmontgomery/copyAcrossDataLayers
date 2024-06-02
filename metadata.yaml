@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-homepage: "https://www.jacob-montgomery.com"
+homepage: "https://jacob-montgomery.com"
 documentation: "https://github.com/jacobdmontgomery/copyAcrossDataLayers"
 versions:
+  # Latest Version
+  - sha: e5691b85e9bcf9adcc34819d4c950e6ae8c33984
+    changeNotes: Adjust default permissions
+  # Previous Versions:
   - sha: 0ab2a96a7141d2d62fd80dfe2ea3ca210de8a64c
     changeNotes: Initial Release
