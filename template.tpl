@@ -1,4 +1,4 @@
-﻿___INFO___
+___INFO___
 
 {
   "type": "TAG",
@@ -73,6 +73,10 @@ const newDataLayerPush = createQueue(newDataLayer);
 
 // Function to copy an object
 function copyObject(obj) {
+  if (typeof obj !== Object){
+    logToConsole("Incorrect object format");
+    data.gtmOnFailure();
+  }
   let copy = {};
   for (let key in obj) {
     if (obj.hasOwnProperty(key)) {
@@ -108,12 +112,19 @@ function dataLayerInterceptor(event) {
     logToConsole("Intercepted event to duplicate:", event);
     copyDataLayerEvent(event);
   }
+  else {
+    data.gtmOnFailure();
+  }
   originalDataLayer.push(event);
   return true;
 }
 
 // Retrieve the original dataLayer array from the window
 const originalDataLayer = copyFromWindow(oldDataLayer) || [];
+if (originalDataLayer == []){
+  logToConsole("Original datalayer empty");
+  data.gtmOnFailure();
+}
 logToConsole("Original dataLayer:", originalDataLayer);
 
 // Override the dataLayer.push method with the interceptor
@@ -137,12 +148,6 @@ overrideDataLayerPush();
     }
   }
 })();
-
-// Call data.gtmOnFailure when the tag fails.
-const onFailure = () => {
-  logToConsole('dataLayer Copier failed');
-  data.gtmOnFailure();
-};
 
 // Call data.gtmOnSuccess when the tag is finished.
 data.gtmOnSuccess();
